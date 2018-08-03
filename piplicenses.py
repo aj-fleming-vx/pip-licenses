@@ -121,13 +121,33 @@ def create_licenses_table(args):
 
     pkgs = get_installed_distributions()
     ignore_pkgs_as_lower = [pkg.lower() for pkg in args.ignore_packages]
+
+    desired_pkgs = []
+    for require_file in args.from_requirements:
+        with open(require_file, 'r') as rf:
+            desired_pkgs += [k for k in rf.readlines() if '#' not in k]
+    for i in range(len(desired_pkgs)):
+        if '<' in desired_pkgs[i]:
+            desired_pkgs[i] = desired_pkgs[i][:desired_pkgs[i].index('<')]
+        if '>' in desired_pkgs[i]:
+            desired_pkgs[i] = desired_pkgs[i][:desired_pkgs[i].index('>')]
+        if '=' in desired_pkgs[i]:
+            desired_pkgs[i] = desired_pkgs[i][:desired_pkgs[i].index('=')]
+
+    desired_pkgs = [k.lower().strip() for k in desired_pkgs]
+    print(desired_pkgs)
+    
     for pkg in pkgs:
         pkg_info = get_pkg_info(pkg)
         pkg_name = pkg_info['name']
 
         if pkg_name.lower() in ignore_pkgs_as_lower:
             continue
-
+        
+        if pkg_name.lower() not in desired_pkgs and len(desired_pkgs) > 0:
+            
+            continue
+        
         if not args.with_system and pkg_name in SYSTEM_PACKAGES:
             continue
 
@@ -238,6 +258,11 @@ def create_parser():
                         nargs='+', metavar='PKG',
                         default=[],
                         help='ignore package name in dumped list')
+    parser.add_argument('-f', '--from-requirements',
+                        action='store', type=str,
+                        nargs='+', metavar='REQ',
+                        default=[],
+                        help='only get licenses for packages in a requirements file(s)')
     parser.add_argument('-o', '--order',
                         action='store', type=str,
                         default='name', metavar='COL',
