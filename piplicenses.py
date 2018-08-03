@@ -135,7 +135,7 @@ def create_licenses_table(args):
             desired_pkgs[i] = desired_pkgs[i][:desired_pkgs[i].index('=')]
 
     desired_pkgs = [k.lower().strip() for k in desired_pkgs]
-    print(desired_pkgs)
+    
     
     for pkg in pkgs:
         pkg_info = get_pkg_info(pkg)
