@@ -32,6 +32,7 @@ import sys
 import argparse
 from email.parser import FeedParser
 from email import message_from_string
+from json import dumps
 
 try:
     from pip._internal.utils.misc import get_installed_distributions
@@ -136,7 +137,6 @@ def create_licenses_table(args):
 
     desired_pkgs = [k.lower().strip() for k in desired_pkgs]
     
-    
     for pkg in pkgs:
         pkg_info = get_pkg_info(pkg)
         pkg_name = pkg_info['name']
@@ -145,7 +145,6 @@ def create_licenses_table(args):
             continue
         
         if pkg_name.lower() not in desired_pkgs and len(desired_pkgs) > 0:
-            
             continue
         
         if not args.with_system and pkg_name in SYSTEM_PACKAGES:
@@ -219,6 +218,14 @@ def get_sortby(args):
 
     return 'Name'
 
+def dump_complete_json(table):
+    def json_row(header, row):
+        k = dict()
+        for i in range(len(header)):
+            k.setdefault(header[i], row[i])
+        return k
+    return  dumps([json_row(table.field_names, r) for r in table._rows])
+    
 
 def create_output_string(args):
     table = create_licenses_table(args)
@@ -227,6 +234,8 @@ def create_output_string(args):
 
     if args.format_html:
         return table.get_html_string(fields=output_fields, sortby=sortby)
+    elif args.format_json:
+        return dump_complete_json(table)
     else:
         return table.get_string(fields=output_fields, sortby=sortby)
 
@@ -241,6 +250,7 @@ def create_parser():
                         action='store_true',
                         default=False,
                         help='find license from classifier')
+
     parser.add_argument('-s', '--with-system',
                         action='store_true',
                         default=False,
@@ -253,6 +263,7 @@ def create_parser():
                         action='store_true',
                         default=False,
                         help='dump with package urls')
+
     parser.add_argument('-i', '--ignore-packages',
                         action='store', type=str,
                         nargs='+', metavar='PKG',
@@ -263,17 +274,19 @@ def create_parser():
                         nargs='+', metavar='REQ',
                         default=[],
                         help='only get licenses for packages in a requirements file(s)')
+
     parser.add_argument('-o', '--order',
                         action='store', type=str,
                         default='name', metavar='COL',
                         help=('order by column\n'
                               '"name", "license", "author", "url"\n'
                               'default: --order=name'))
-    parser.add_argument('-m', '--format-markdown',
+    
+    parser.add_argument('--format-markdown',
                         action='store_true',
                         default=False,
                         help='dump as markdown style')
-    parser.add_argument('-r', '--format-rst',
+    parser.add_argument('--format-rst',
                         action='store_true',
                         default=False,
                         help='dump as reST style')
@@ -285,6 +298,10 @@ def create_parser():
                         action='store_true',
                         default=False,
                         help='dump as html style')
+    parser.add_argument('--format-json',
+                        action='store_true',
+                        default=False,
+                        help='dump as json')
 
     return parser
 
